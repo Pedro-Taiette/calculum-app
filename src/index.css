@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================== */
+/*         BASE / THEME           */
+/* ============================== */
+@layer base {
+  :root {
+    --primary: 16 185 129; /* emerald-500 */
+  }
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-gray-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
+/* ============================== */
+/*          LAYOUT UTILS          */
+/* ============================== */
+@layer components {
+  .container-p { @apply max-w-6xl mx-auto px-4; }
+
+  .card {
+    @apply rounded-2xl shadow-sm border bg-white border-gray-200
+           dark:bg-slate-900 dark:border-slate-800;
+  }
+
+  .row-wrap { @apply flex flex-wrap gap-2; }
+  .tag {
+    @apply text-xs px-2 py-1 rounded border bg-gray-50 border-gray-200
+           dark:bg-slate-800 dark:border-slate-700;
+  }
+
+  .grid-kbd {
+    @apply grid gap-2;
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  }
+  .grid-2-auto {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+/* ============================== */
+/*        CORES PRIMÁRIAS         */
+/* ============================== */
+@layer components {
+  .bg-primary     { @apply bg-emerald-600; }
+  .text-primary   { @apply text-emerald-600; }
+  .border-primary { @apply border-emerald-600; }
+}
+
+/* ============================== */
+/*            INPUTS              */
+/* ============================== */
+@layer components {
+  .input {
+    @apply w-full rounded-xl border px-3 py-3 text-base
+           bg-white text-slate-900 placeholder-gray-400 border-gray-300
+           outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
+           transition;
+    @apply dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400
+           dark:border-slate-700 dark:focus:border-emerald-500;
+  }
+
+  /* Correção de autofill no dark mode */
+  :root.dark input:-webkit-autofill,
+  :root.dark input:-webkit-autofill:hover,
+  :root.dark input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e2e8f0; /* slate-200 */
+    transition: background-color 9999s ease-in-out 0s;
+    box-shadow: 0 0 0px 1000px #0f172a inset; /* slate-950 */
+    caret-color: #e2e8f0;
+  }
+}
+
+/* ============================== */
+/*            BOTÕES              */
+/* ============================== */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-3 py-2 rounded-lg
+           border text-sm transition active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply border-gray-300 bg-white text-slate-800 hover:bg-gray-50
+           dark:bg-slate-900 dark:text-slate-100
+           dark:border-slate-700 dark:hover:bg-slate-800;
+  }
+
+  .btn-primary {
+    @apply bg-emerald-600 text-white border-emerald-600 hover:opacity-90;
+  }
+
+  /* teclas do teclado matemático */
+  .kbd-btn {
+    @apply inline-flex items-center justify-center h-10 px-3 rounded-xl
+           border text-sm select-none transition
+           bg-white text-slate-800 border-gray-300 hover:bg-gray-50
+           active:scale-[0.98];
+    @apply dark:bg-slate-900 dark:text-slate-100
+           dark:border-slate-700 dark:hover:bg-slate-800;
+  }
+}
+
+/* ============================== */
+/*         KaTeX / PREVIEW        */
+/* ============================== */
+@layer components {
+  .katex-box {
+    @apply rounded-xl border px-3 py-2 text-lg overflow-x-auto
+           bg-white border-gray-200
+           dark:bg-slate-900 dark:border-slate-800;
+  }
+  .katex-box--muted {
+    @apply text-base border px-3 py-2 rounded-xl
+           bg-gray-50 border-gray-200
+           dark:bg-slate-800/60 dark:border-slate-800;
+  }
+}
+
+.kbd-btn:focus-visible,
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16,185,129,.35);
+}
+
+.dark ::placeholder { color: rgb(148 163 184); } /* slate-400 */
+
+@media (min-resolution: 2dppx) {
+  .card, .input, .katex-box, .katex-box--muted { backface-visibility: hidden; }
+}
+
+@layer components {
+  .panel-sticky { position: sticky; top: 84px; }
+  .section-title { @apply text-lg font-medium tracking-tight; }
+  .muted { @apply text-sm text-gray-600 dark:text-slate-300; }
+}
