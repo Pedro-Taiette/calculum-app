@@ -1,4 +1,4 @@
-import { safeCompile } from "./math";
+import { safeCompile, type MathCompiled } from "./math";
 import { sympyLimit } from "./sympyClient";
 
 export type LimitSide = "both" | "left" | "right";
@@ -18,8 +18,16 @@ export async function computeLimit(expression: string, a: number, side: LimitSid
       if (one) return one;
       return numericSide(expression, a, side);
     }
-    const L: LateralResult = (await trySympySide(expression, a, "left"))  ?? numericSide(expression, a, "left");
-    const R: LateralResult = (await trySympySide(expression, a, "right")) ?? numericSide(expression, a, "right");
+
+    // Try to evaluate both sides with SymPy concurrently
+    const compiled = safeCompile(expression);
+    const [ls, rs] = await Promise.all([
+      trySympySide(expression, a, "left"),
+      trySympySide(expression, a, "right"),
+    ]);
+
+    const L: LateralResult = ls ?? numericSide(expression, a, "left", compiled);
+    const R: LateralResult = rs ?? numericSide(expression, a, "right", compiled);
 
     if (L.kind === "value" && R.kind === "value" && close(L.value, R.value))
       return { kind: "value", side: "both", value: 0.5*(L.value + R.value), note: notes([L.note, R.note]) };
@@ -44,17 +52,28 @@ async function trySympySide(
     if (r.kind === "neg_infinity") return { kind: "neg_infinity", side, note: "SymPy" };
     if ("value" in r)              return { kind: "value", side, value: r.value, note: "SymPy" };
     return null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 /* Fallback numérico lateral */
-function numericSide(expr: string, a: number, side: "left" | "right"): LateralResult {
-  const f = safeCompile(expr);
+const H = [1e-1,5e-2,2e-2,1e-2,5e-3,2e-3,1e-3,5e-4,2e-4,1e-4];
+function numericSide(
+  expr: string,
+  a: number,
+  side: "left" | "right",
+  compiled?: MathCompiled
+): LateralResult {
+  const f = compiled ?? safeCompile(expr);
   if (!f.node) return { kind: "undefined", side };
 
-  const H = [1e-1,5e-2,2e-2,1e-2,5e-3,2e-3,1e-3,5e-4,2e-4,1e-4];
-  const seq = side === "left" ? H.map(h => f.evaluate({ x: a - h })) : H.map(h => f.evaluate({ x: a + h }));
-  const ys = seq.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const ys: number[] = [];
+  for (const h of H) {
+    const x = side === "left" ? a - h : a + h;
+    const v = f.evaluate({ x }) as number;
+    if (typeof v === "number" && Number.isFinite(v)) ys.push(v);
+  }
   if (ys.length < 4) return { kind: "undefined", side };
 
   const recent = ys.slice(-4);
@@ -77,3 +96,4 @@ function close(a: number, b: number) {
 }
 function avg(a: number[]) { return a.reduce((s,v)=>s+v,0)/a.length; }
 function notes(ns: Array<string|undefined>) { return ns.filter(Boolean).join(" · "); }
+
