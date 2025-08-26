@@ -9,6 +9,8 @@ export type LimitResult =
   | { kind: "undefined"; side: LimitSide; note?: string }
   | { kind: "error"; side: LimitSide; error: unknown; note?: string };
 
+type LateralResult = Exclude<LimitResult, { side: "both" } | { kind: "error" }>;
+
 export async function computeLimit(expression: string, a: number, side: LimitSide = "both"): Promise<LimitResult> {
   try {
     if (side !== "both") {
@@ -16,8 +18,8 @@ export async function computeLimit(expression: string, a: number, side: LimitSid
       if (one) return one;
       return numericSide(expression, a, side);
     }
-    const L = (await trySympySide(expression, a, "left"))  ?? numericSide(expression, a, "left");
-    const R = (await trySympySide(expression, a, "right")) ?? numericSide(expression, a, "right");
+    const L: LateralResult = (await trySympySide(expression, a, "left"))  ?? numericSide(expression, a, "left");
+    const R: LateralResult = (await trySympySide(expression, a, "right")) ?? numericSide(expression, a, "right");
 
     if (L.kind === "value" && R.kind === "value" && close(L.value, R.value))
       return { kind: "value", side: "both", value: 0.5*(L.value + R.value), note: notes([L.note, R.note]) };
@@ -31,7 +33,11 @@ export async function computeLimit(expression: string, a: number, side: LimitSid
   }
 }
 
-async function trySympySide(expr: string, a: number, side: Exclude<LimitSide,"both">) {
+async function trySympySide(
+  expr: string,
+  a: number,
+  side: Exclude<LimitSide, "both">
+): Promise<LateralResult | null> {
   try {
     const r = await sympyLimit(expr, a, side);
     if (r.kind === "infinity")     return { kind: "infinity", side, note: "SymPy" };
@@ -42,8 +48,7 @@ async function trySympySide(expr: string, a: number, side: Exclude<LimitSide,"bo
 }
 
 /* Fallback numérico lateral */
-function numericSide(expr: string, a: number, side: "left"|"right"):
-  Exclude<LimitResult,{side:"both"}|{kind:"error"}> {
+function numericSide(expr: string, a: number, side: "left" | "right"): LateralResult {
   const f = safeCompile(expr);
   if (!f.node) return { kind: "undefined", side };
 
