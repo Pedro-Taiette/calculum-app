@@ -56,7 +56,7 @@ export function FunctionInput({
         <input
           ref={ref}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value.toLowerCase())}
           placeholder="ex.: (x^2-1)/(x-1), sin(x)/x, ln(x)"
           className="input w-full"
           spellCheck={false}
