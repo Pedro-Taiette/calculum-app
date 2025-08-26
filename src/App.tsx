@@ -101,8 +101,12 @@ function ResultCard({ loading, result }: { loading: boolean; result: LimitResult
     <div className="border rounded-xl p-4 bg-gray-50 dark:bg-slate-800/60 dark:border-slate-700">
       <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Resultado</div>
       <div className={"text-2xl font-semibold " + color}>lim x → a {text === "—" ? "" : `= ${text}`}</div>
-      {result?.note && <div className="text-xs text-gray-500 dark:text-slate-400 mt-2">{result.note}</div>}
-      {result?.error && <div className="text-xs text-red-600 mt-2">{String(result.error)}</div>}
+      {result?.note && (
+        <div className="text-xs text-gray-500 dark:text-slate-400 mt-2">{result.note}</div>
+      )}
+      {result?.kind === "error" && (
+        <div className="text-xs text-red-600 mt-2">{String(result.error)}</div>
+      )}
     </div>
   );
 }

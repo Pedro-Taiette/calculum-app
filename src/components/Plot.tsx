@@ -10,6 +10,11 @@ import {
   ToolboxComponent,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
+import type {
+  EChartsOption,
+  SeriesOption,
+  ToolboxComponentOption,
+} from "echarts";
 import { safeCompile, type MathCompiled } from "@/lib/math";
 import type { LimitResult } from "@/lib/limit";
 
@@ -157,7 +162,7 @@ export function Plot({
 
   // séries: cada segmento é uma linha contínua (sem lacunas internas)
   const series = useMemo(() => {
-    const arr: echarts.SeriesOption[] = [];
+    const arr: SeriesOption[] = [];
     for (let i = 0; i < segs.length; i++) {
       arr.push({
         type: "line",
@@ -179,7 +184,7 @@ export function Plot({
             ...mergeAsym(asym, xRange).map(x => ({ xAxis: x })),
           ],
         } : undefined,
-      } as echarts.SeriesOption);
+      } as SeriesOption);
     }
     // marcador do limite finito
     if (limitResult?.kind === "value") {
@@ -192,7 +197,7 @@ export function Plot({
         lineStyle: { opacity: 0 },
         itemStyle: { color: "transparent", borderColor: cA, borderWidth: 2 },
         tooltip: { show: true, formatter: () => `x = ${around}<br/>lim f(x) = ${(limitResult as any).value}` },
-      } as echarts.SeriesOption);
+      } as SeriesOption);
     }
     return arr;
   }, [segs, cFx, around, limitResult, cA, asym, xRange]);
@@ -222,12 +227,12 @@ export function Plot({
         restore: { title: "Resetar" },
         dataZoom: { yAxisIndex: "none", title: { zoom: "Zoom", back: "Voltar" } },
       },
-    } as echarts.ToolboxComponentOption;
+    } as ToolboxComponentOption;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xRange]);
 
   // opção final
-  const option = useMemo((): echarts.EChartsOption => ({
+  const option = useMemo((): EChartsOption => ({
     animation: false,
     backgroundColor: bg,
     grid: { left: 56, right: 20, top: 54, bottom: 72, containLabel: false },
