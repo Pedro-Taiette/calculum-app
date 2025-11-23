@@ -12,7 +12,7 @@ function toLatex(expr: string): string {
   }
 }
 
-export function ExpressionPreview({ expression }: { expression: string }) {
+export function ExpressionPreview({ expression, variable = "x" }: { expression: string; variable?: string }) {
   // original
   const latexOrig = toLatex(expression);
 
@@ -23,7 +23,7 @@ export function ExpressionPreview({ expression }: { expression: string }) {
   return (
     <div className="space-y-2">
       <div className="katex-box">
-        <InlineMath math={`f(x)=\\displaystyle ${latexOrig}`} />
+        <InlineMath math={`f(${variable})=\\displaystyle ${latexOrig}`} />
       </div>
 
       <div className="katex-box katex-box--muted">

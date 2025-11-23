@@ -68,3 +68,5 @@ self.onmessage = async (ev: MessageEvent<Req>) => {
     (self as any).postMessage({ id, ok: false, error: String(e?.message || e) } as Res);
   }
 };
+
+export {};

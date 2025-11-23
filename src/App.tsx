@@ -7,6 +7,10 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { LimitControls } from "./components/LimitControls";
 import { Tabs, type TabKey } from "./components/Tabs";
 import Docs from "./pages/Docs";
+import { computeDerivative, type DerivativeResult } from "./lib/derivative";
+import { DerivativeControls } from "./components/DerivativeControls";
+import { math } from "./lib/math";
+import { InlineMath } from "react-katex";
 
 export default function App() {
   const [tab, setTab] = useState<TabKey>("limits");
@@ -16,6 +20,11 @@ export default function App() {
   const [side, setSide] = useState<LimitSide>("both");
   const [result, setResult] = useState<LimitResult | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [derivativeAt, setDerivativeAt] = useState(1);
+  const [derivativeVar, setDerivativeVar] = useState("x");
+  const [derivativeResult, setDerivativeResult] = useState<DerivativeResult | null>(null);
+  const [derivativeLoading, setDerivativeLoading] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -27,6 +36,17 @@ export default function App() {
     })();
     return () => { live = false; };
   }, [expr, a, side]);
+
+  useEffect(() => {
+    let live = true;
+    setDerivativeLoading(true);
+    (async () => {
+      const r = await computeDerivative(expr, derivativeAt, derivativeVar);
+      if (live) setDerivativeResult(r);
+      setDerivativeLoading(false);
+    })();
+    return () => { live = false; };
+  }, [expr, derivativeAt, derivativeVar]);
 
   return (
     <div className="container-p py-6 space-y-6">
@@ -48,9 +68,9 @@ export default function App() {
             <FunctionInput value={expr} onChange={setExpr} />
             <div>
               <h3 className="muted mb-2">Pré-visualização</h3>
-              <ExpressionPreview expression={expr} />
-            </div>
+            <ExpressionPreview expression={expr} />
           </div>
+        </div>
 
           {/* Coluna direita: controles + resultado (fixo no scroll) */}
           <div className="panel-sticky">
@@ -74,8 +94,46 @@ export default function App() {
       </>
     )}
 
+      {tab === "derivatives" && (
+      <>
+        <section className="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-start">
+          <div className="card p-5 space-y-4">
+            <h2 className="section-title">Função f(x)</h2>
+            <FunctionInput value={expr} onChange={setExpr} />
+            <div className="space-y-3">
+              <div>
+                <h3 className="muted mb-2">Pré-visualização</h3>
+                <ExpressionPreview expression={expr} variable={derivativeVar} />
+              </div>
+              <DerivativePreview derivativeExpr={derivativeResult?.derivativeExpr ?? null} variable={derivativeVar} />
+            </div>
+          </div>
 
-      {tab === "derivatives" && <Placeholder title="Derivadas" desc="Em breve." />}
+          <div className="panel-sticky">
+            <div className="card p-5 space-y-4">
+              <h2 className="section-title">Derivada em um ponto</h2>
+              <DerivativeControls
+                variable={derivativeVar}
+                onChangeVariable={setDerivativeVar}
+                point={derivativeAt}
+                onChangePoint={setDerivativeAt}
+              />
+              <DerivativeResultCard
+                loading={derivativeLoading}
+                result={derivativeResult}
+                at={derivativeAt}
+                variable={derivativeVar}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="card p-5">
+          <h2 className="section-title mb-4">Gráfico</h2>
+          <Plot expression={expr} around={derivativeAt} limitResult={null} />
+        </section>
+      </>
+    )}
       {tab === "integrals" && <Placeholder title="Integrais" desc="Em breve." />}
       {tab === "docs" && <Docs />}
     </div>
@@ -100,7 +158,7 @@ function ResultCard({ loading, result }: { loading: boolean; result: LimitResult
   return (
     <div className="border rounded-xl p-4 bg-gray-50 dark:bg-slate-800/60 dark:border-slate-700">
       <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Resultado</div>
-      <div className={"text-2xl font-semibold " + color}>lim x → a {text === "—" ? "" : `= ${text}`}</div>
+      <div className={"text-2xl font-semibold " + color}>lim x → a {text === "" ? "" : `= ${text}`}</div>
       {result?.note && (
         <div className="text-xs text-gray-500 dark:text-slate-400 mt-2">{result.note}</div>
       )}
@@ -111,6 +169,71 @@ function ResultCard({ loading, result }: { loading: boolean; result: LimitResult
   );
 }
 function round(n:number, d=6){ const p=10**d; return Math.round(n*p)/p; }
+
+function DerivativeResultCard({ loading, result, at, variable }: { loading: boolean; result: DerivativeResult | null; at: number; variable: string }) {
+  const color =
+    result?.kind === "value" ? "text-emerald-600 dark:text-emerald-400" :
+    result?.kind === "undefined" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-slate-300";
+
+  const text =
+    loading ? "Calculando…" :
+    !result ? "—" :
+    result.kind === "value" ? String(round(result.value)) :
+    result.kind === "undefined" ? "Indefinido" : "Erro";
+
+  const latexDer = result?.derivativeExpr ? toLatex(result.derivativeExpr, variable) : null;
+
+  return (
+    <div className="border rounded-xl p-4 bg-gray-50 dark:bg-slate-800/60 dark:border-slate-700 space-y-3">
+      <div>
+        <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Resultado</div>
+        <div className={"text-2xl font-semibold " + color}>f'({variable}) em {variable}={at} {text === "" ? "" : `= ${text}`}</div>
+        {result?.note && (
+          <div className="text-xs text-gray-500 dark:text-slate-400 mt-2">{result.note}</div>
+        )}
+        {result?.kind === "error" && (
+          <div className="text-xs text-red-600 mt-2">{String(result.error)}</div>
+        )}
+      </div>
+
+      {latexDer && (
+        <div className="katex-box katex-box--muted">
+          <InlineMath math={`f'(${variable})=\\displaystyle ${latexDer}`} />
+          <div className="text-xs mt-1 text-gray-500 dark:text-slate-400">forma simbólica</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DerivativePreview({ derivativeExpr, variable }: { derivativeExpr: string | null | undefined; variable: string }) {
+  if (!derivativeExpr) return null;
+  const latex = toLatex(derivativeExpr, variable);
+  if (!latex) return null;
+  return (
+    <div>
+      <h3 className="muted mb-2">f'({variable})</h3>
+      <div className="katex-box katex-box--muted">
+        <InlineMath math={`\\displaystyle ${latex}`} />
+      </div>
+    </div>
+  );
+}
+
+function toLatex(expr: string, variable: string) {
+  try {
+    const node = math.parse(expr.replace(/\^/g, "^"));
+    return node.toTex({ parenthesis: "auto", implicit: "hide" });
+  } catch {
+    try {
+      const escVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const node = math.parse(expr.replace(new RegExp(escVar, "g"), "x"));
+      return node.toTex({ parenthesis: "auto", implicit: "hide" });
+    } catch {
+      return null;
+    }
+  }
+}
 
 function Placeholder({ title, desc }:{title:string; desc:string}) {
   return (
