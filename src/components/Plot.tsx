@@ -109,10 +109,12 @@ export function Plot({
   expression,
   around,
   limitResult,
+  areaRange,
 }: {
   expression: string;
   around: number;
   limitResult: LimitResult | null;
+  areaRange?: [number, number] | null;
 }) {
   const dark = useDark();
   const compiled = useMemo(() => safeCompile(expression), [expression]);
@@ -184,6 +186,11 @@ export function Plot({
             ...mergeAsym(asym, xRange).map(x => ({ xAxis: x })),
           ],
         } : undefined,
+        markArea: i === 0 && areaRange ? {
+          silent: true,
+          itemStyle: { color: dark ? "rgba(124,58,237,0.12)" : "rgba(124,58,237,0.12)", opacity: 1 },
+          data: [[{ xAxis: Math.min(areaRange[0], areaRange[1]) }, { xAxis: Math.max(areaRange[0], areaRange[1]) }]],
+        } : undefined,
       } as SeriesOption);
     }
     // marcador do limite finito
@@ -200,7 +207,7 @@ export function Plot({
       } as SeriesOption);
     }
     return arr;
-  }, [segs, cFx, around, limitResult, cA, asym, xRange]);
+  }, [segs, cFx, around, limitResult, cA, asym, xRange, areaRange, dark]);
 
   // toolbox com botões 100% clicáveis (oficial do ECharts)
   const toolbox = useMemo(() => {
